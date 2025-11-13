@@ -1,6 +1,14 @@
 Flask==3.1.2
 Flask-SQLAlchemy==3.1.1
 SQLAlchemy==2.0.32
-mysql-connector-python==9.5.0   
-psycopg2-binary==2.9.9           
-python-dotenv==1.1.1              
+
+
+mysql-connector-python==9.5.0
+psycopg2-binary==2.9.9
+
+python-dotenv==1.1.1
+
+
+requests==2.32.3       # for API testing or external API calls
+gunicorn==23.0.0       # for production deployment (WSGI server)
+Flask-Cors==5.0.0  
