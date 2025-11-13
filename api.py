@@ -5,15 +5,16 @@ from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 
 # ---------------- Database Configuration ----------------
-DB_TYPE = os.environ.get("DB_TYPE", "postgres")  # default to PostgreSQL on Render
+DB_TYPE = os.environ.get("DB_TYPE", "postgres")
 
 if DB_TYPE == "postgres":
     app.config['SQLALCHEMY_DATABASE_URI'] = (
         f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}"
         f"@{os.environ.get('DB_HOST')}/{os.environ.get('DB_NAME')}"
     )
+    # Render PostgreSQL needs SSL
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"connect_args": {"sslmode": "require"}}
 else:
-    # Default fallback SQLite
     basedir = os.path.abspath(os.path.dirname(__file__))
     db_path = os.path.join(basedir, 'instance', 'vendordb.sqlite')
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
@@ -22,6 +23,7 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
 
 # ---------------- Database Model ----------------
 class VendorDetails(db.Model):
@@ -122,3 +124,4 @@ def delete_vendor(pan):
 # ---------------- Main ----------------
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
