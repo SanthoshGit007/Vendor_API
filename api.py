@@ -5,15 +5,15 @@ from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 
 # ---------------- Database Configuration ----------------
-DB_TYPE = os.environ.get("DB_TYPE", "sqlite")  # "sqlite" or "mysql"
+DB_TYPE = os.environ.get("DB_TYPE", "postgres")  # default to PostgreSQL on Render
 
-if DB_TYPE == "mysql":
+if DB_TYPE == "postgres":
     app.config['SQLALCHEMY_DATABASE_URI'] = (
-        f"mysql+mysqlconnector://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}"
+        f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}"
         f"@{os.environ.get('DB_HOST')}/{os.environ.get('DB_NAME')}"
     )
 else:
-    # Default to SQLite
+    # Default fallback SQLite
     basedir = os.path.abspath(os.path.dirname(__file__))
     db_path = os.path.join(basedir, 'instance', 'vendordb.sqlite')
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
@@ -66,8 +66,6 @@ with app.app_context():
     db.create_all()
 
 # ---------------- Routes ----------------
-
-# GET all vendors
 @app.route('/vendors', methods=['GET'])
 def get_vendors():
     vendors = VendorDetails.query.all()
@@ -76,7 +74,6 @@ def get_vendors():
         r.pop('_sa_instance_state', None)
     return jsonify(result), 200
 
-# GET vendor by PAN
 @app.route('/vendors/<string:pan>', methods=['GET'])
 def get_vendor(pan):
     vendor = VendorDetails.query.get(pan)
@@ -86,7 +83,6 @@ def get_vendor(pan):
         return jsonify(data), 200
     return jsonify({"message": "Vendor not found"}), 404
 
-# POST add new vendor
 @app.route('/vendors', methods=['POST'])
 def add_vendor():
     data = request.get_json()
@@ -100,7 +96,6 @@ def add_vendor():
     db.session.commit()
     return jsonify({"message": "Vendor added successfully"}), 201
 
-# PUT update vendor
 @app.route('/vendors/<string:pan>', methods=['PUT'])
 def update_vendor(pan):
     data = request.get_json()
@@ -114,7 +109,6 @@ def update_vendor(pan):
     db.session.commit()
     return jsonify({"message": "Vendor updated successfully"}), 200
 
-# DELETE vendor
 @app.route('/vendors/<string:pan>', methods=['DELETE'])
 def delete_vendor(pan):
     vendor = VendorDetails.query.get(pan)
