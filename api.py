@@ -1,27 +1,43 @@
 import os
+import pymysql # Make sure to install this: pip install pymysql
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
 # ---------------- Database Configuration ----------------
-DB_TYPE = os.environ.get("DB_TYPE", "postgres")
+DB_TYPE = os.environ.get("DB_TYPE", "mysql") # Default to mysql now
 
-if DB_TYPE == "postgres":
-    app.config['SQLALCHEMY_DATABASE_URI'] = (
-        f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}"
-        f"@{os.environ.get('DB_HOST')}/{os.environ.get('DB_NAME')}"
-    )
-    # Render PostgreSQL needs SSL
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"connect_args": {"sslmode": "require"}}
+if DB_TYPE == "mysql":
+    # Aiven requires SSL. We must point to the ca.pem file.
+    # Ensure ca.pem is uploaded to Render in the same folder as app.py
+    ssl_args = {
+        "ssl": {
+            "ca": "ca.pem" 
+        }
+    }
+    
+    # Construct the Aiven MySQL Connection String
+    # Format: mysql+pymysql://USER:PASSWORD@HOST:PORT/DB_NAME
+    user = os.environ.get('DB_USER')
+    password = os.environ.get('DB_PASSWORD')
+    host = os.environ.get('DB_HOST')
+    port = os.environ.get('DB_PORT')
+    dbname = os.environ.get('DB_NAME')
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{user}:{password}@{host}:{port}/{dbname}"
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"connect_args": ssl_args}
+
+elif DB_TYPE == "postgres":
+    # ... (Keep your old Postgres code here if you want a backup) ...
+    pass
 else:
+    # SQLite fallback
     basedir = os.path.abspath(os.path.dirname(__file__))
     db_path = os.path.join(basedir, 'instance', 'vendordb.sqlite')
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 db = SQLAlchemy(app)
 
 
@@ -124,4 +140,5 @@ def delete_vendor(pan):
 # ---------------- Main ----------------
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
 
